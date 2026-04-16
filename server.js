@@ -176,15 +176,21 @@ function fetchUrl(url) {
 }
 
 app.post('/api/admin/fetch-image', requireAdmin, async (req, res) => {
-  const { wrestlerName } = req.body;
+  const { wrestlerName, index = 0 } = req.body;
   if (!wrestlerName) return res.status(400).json({ error: 'Name required' });
 
   const safeName = wrestlerName.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
-  // Check cache first
-  const cachedFiles = fs.readdirSync(IMAGES_DIR).filter(f => f.startsWith(safeName + '.'));
-  if (cachedFiles.length > 0) {
-    return res.json({ success: true, url: `/wrestler-images/${cachedFiles[0]}`, cached: true });
+  // Check cache first if index is 0
+  if (index === 0) {
+    const cachedFiles = fs.readdirSync(IMAGES_DIR).filter(f => f.startsWith(safeName + '.'));
+    if (cachedFiles.length > 0) {
+      return res.json({ success: true, url: `/wrestler-images/${cachedFiles[0]}`, cached: true, index: 0 });
+    }
+  } else {
+    // Delete existing cache to force update
+    const files = fs.readdirSync(IMAGES_DIR).filter(f => f.startsWith(safeName + '.'));
+    files.forEach(f => { try { fs.unlinkSync(path.join(IMAGES_DIR, f)); } catch(e) {} });
   }
 
   try {
@@ -207,16 +213,18 @@ app.post('/api/admin/fetch-image', requireAdmin, async (req, res) => {
         const data = JSON.parse(decoded.substring(3, decoded.length - 1));
         if (data.murl) imageUrls.push(data.murl);
       } catch (e) {}
-      if (imageUrls.length >= 5) break;
+      if (imageUrls.length >= 20) break;
     }
 
     if (imageUrls.length === 0) {
       return res.json({ success: false, error: 'No valid image URLs found' });
     }
 
-    // Try images until one downloads successfully
+    // Try images until one downloads successfully, starting from the requested index
     let saved = false;
-    for (const imgUrl of imageUrls) {
+    for (let i = 0; i < imageUrls.length; i++) {
+      const tryIdx = (index + i) % imageUrls.length;
+      const imgUrl = imageUrls[tryIdx];
       try {
         const imgRes = await fetchUrl(imgUrl);
         const ct = imgRes.headers['content-type'] || '';
@@ -224,7 +232,7 @@ app.post('/api/admin/fetch-image', requireAdmin, async (req, res) => {
         if (imgRes.body.length < 2000) continue;
         const filename = `${safeName}.${ext}`;
         fs.writeFileSync(path.join(IMAGES_DIR, filename), imgRes.body);
-        res.json({ success: true, url: `/wrestler-images/${filename}` });
+        res.json({ success: true, url: `/wrestler-images/${filename}`, index: tryIdx });
         saved = true;
         break;
       } catch(e) { continue; }
