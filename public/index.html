@@ -479,9 +479,16 @@ function renderPicks(){
     let cutoffHtml='';
     if(event.cutoff){
       const dt=new Date(event.cutoff);
+      const etStr = dt.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: 'America/New_York'
+      }) + ' ET';
       cutoffHtml=`<div style="text-align: right;">
         <div class="cutoff-label">Picks Cutoff</div>
-        <div class="cutoff-time ${cutoffPassed?'expired':''}">${dt.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div>
+        <div class="cutoff-time ${cutoffPassed?'expired':''}">${etStr}</div>
         ${cutoffPassed?'<div style="font-size:.75rem;color:var(--danger);margin-top:2px;">🔒 LOCKED</div>':''}
       </div>`;
     }
@@ -689,7 +696,18 @@ function renderAdmin(){
       </div>
       <div>
         <label>Picks Cutoff Date/Time</label>
-        <input type="datetime-local" id="adminCutoff" value="${event.cutoff?new Date(event.cutoff).toISOString().slice(0,16):''}">
+        <div style="display:flex;gap:8px;">
+          <input type="date" id="adminCutoffDate" style="flex:2;" value="${event.cutoff?new Date(event.cutoff).toISOString().split('T')[0]:''}">
+          <select id="adminCutoffTime" style="flex:1;">
+            ${Array.from({length:96},(_,i)=>{
+              const h=String(Math.floor(i/4)).padStart(2,'0');
+              const m=String((i%4)*15).padStart(2,'0');
+              const val=`${h}:${m}`;
+              const currentVal = event.cutoff ? new Date(event.cutoff).toISOString().slice(11,16) : '00:00';
+              return `<option value="${val}" ${val===currentVal?'selected':''}>${val}</option>`;
+            }).join('')}
+          </select>
+        </div>
       </div>
     </div>
     <div id="eventMsg"></div>
@@ -813,8 +831,9 @@ function renderAdmin(){
 async function saveEvent(){
   adminViewDirty=false;
   const name=el('adminEventName').value.trim();
-  const cutoffRaw=el('adminCutoff').value;
-  const cutoff=cutoffRaw?new Date(cutoffRaw).toISOString():null;
+  const date=el('adminCutoffDate').value;
+  const time=el('adminCutoffTime').value;
+  const cutoff = (date && time) ? new Date(`${date}T${time}:00Z`).toISOString() : null;
   await fetch('/api/admin/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,cutoff})});
   showMsg('eventMsg','Event settings saved!',false);
   await loadData(); // safe - we just saved
