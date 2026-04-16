@@ -64,7 +64,21 @@ app.get('/api/data', (req, res) => {
   const now = new Date();
   const cutoffPassed = data.event.cutoff && new Date(data.event.cutoff) < now;
   const isAdmin = !!(req.session && req.session.isAdmin);
-  res.json({ ...data, cutoffPassed, isAdmin });
+  const userId = req.session && req.session.userId;
+
+  // Clone data to avoid mutating global object
+  const safeData = JSON.parse(JSON.stringify(data));
+
+  // If not admin and cutoff not passed, hide other users' picks
+  if (!isAdmin && !cutoffPassed) {
+    Object.keys(safeData.users).forEach(id => {
+      if (id !== userId) {
+        safeData.users[id].picks = {};
+      }
+    });
+  }
+
+  res.json({ ...safeData, cutoffPassed, isAdmin });
 });
 
 app.post('/api/users/register', (req, res) => {
@@ -76,6 +90,7 @@ app.post('/api/users/register', (req, res) => {
     data.users[id] = { id, name: name.trim(), picks: {} };
     saveData(data);
   }
+  req.session.userId = id;
   res.json({ user: data.users[id] });
 });
 
