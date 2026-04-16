@@ -188,31 +188,35 @@ app.post('/api/admin/fetch-image', requireAdmin, async (req, res) => {
   }
 
   try {
-    // Search DuckDuckGo Images (more scrape-friendly than Google)
+    // Search Bing Images
     const query = encodeURIComponent(`${wrestlerName} wrestler WWE`);
-    const searchUrl = `https://duckduckgo.com/?q=${query}&iax=images&ia=images&t=h_`;
-    const tokenRes = await fetchUrl(searchUrl);
-    const tokenHtml = tokenRes.body.toString();
+    const searchUrl = `https://www.bing.com/images/search?q=${query}&form=HDRSC2&first=1`;
+    const resPage = await fetchUrl(searchUrl);
+    const html = resPage.body.toString();
 
-    // Get vqd token needed for DDG image API
-    const vqdMatch = tokenHtml.match(/vqd=['"]([^'"]+)['"]/);
-    if (!vqdMatch) throw new Error('Could not get search token');
-    const vqd = vqdMatch[1];
-
-    // Hit DDG image API
-    const apiUrl = `https://duckduckgo.com/i.js?q=${query}&vqd=${vqd}&f=,,,&p=1&v7exp=a`;
-    const apiRes = await fetchUrl(apiUrl);
-    const apiData = JSON.parse(apiRes.body.toString());
-
-    if (!apiData.results || apiData.results.length === 0) {
+    // Bing stores image data in m="{"mid":"...","murl":"https://..."}"
+    const matches = html.match(/m="\{.*?\}"/g);
+    if (!matches || matches.length === 0) {
       return res.json({ success: false, error: 'No images found' });
+    }
+
+    const imageUrls = [];
+    for (const m of matches) {
+      const decoded = m.replace(/&quot;/g, '"');
+      try {
+        const data = JSON.parse(decoded.substring(3, decoded.length - 1));
+        if (data.murl) imageUrls.push(data.murl);
+      } catch (e) {}
+      if (imageUrls.length >= 5) break;
+    }
+
+    if (imageUrls.length === 0) {
+      return res.json({ success: false, error: 'No valid image URLs found' });
     }
 
     // Try images until one downloads successfully
     let saved = false;
-    for (const result of apiData.results.slice(0, 5)) {
-      const imgUrl = result.image || result.thumbnail;
-      if (!imgUrl) continue;
+    for (const imgUrl of imageUrls) {
       try {
         const imgRes = await fetchUrl(imgUrl);
         const ct = imgRes.headers['content-type'] || '';
