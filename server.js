@@ -60,10 +60,24 @@ app.get('/api/admin/status', (req, res) => {
 });
 
 app.get('/api/data', (req, res) => {
-  const data = loadData();
+  const rawData = loadData();
   const now = new Date();
-  const cutoffPassed = data.event.cutoff && new Date(data.event.cutoff) < now;
+  const cutoffPassed = rawData.event.cutoff && new Date(rawData.event.cutoff) < now;
   const isAdmin = !!(req.session && req.session.isAdmin);
+
+  // Deep clone to avoid mutating global data
+  const data = JSON.parse(JSON.stringify(rawData));
+
+  // Hide picks if cutoff hasn't passed and not an admin
+  if (!cutoffPassed && !isAdmin) {
+    const requesterId = req.session.userId;
+    Object.keys(data.users).forEach(uid => {
+      if (uid !== requesterId) {
+        data.users[uid].picks = {};
+      }
+    });
+  }
+
   res.json({ ...data, cutoffPassed, isAdmin });
 });
 
@@ -76,6 +90,7 @@ app.post('/api/users/register', (req, res) => {
     data.users[id] = { id, name: name.trim(), picks: {} };
     saveData(data);
   }
+  req.session.userId = id;
   res.json({ user: data.users[id] });
 });
 
@@ -89,6 +104,13 @@ app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
 
 app.post('/api/picks', (req, res) => {
   const { userId, picks } = req.body;
+
+  // Security check: ensure user is submitting for themselves
+  const isAdmin = !!(req.session && req.session.isAdmin);
+  if (!isAdmin && req.session.userId !== userId) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
   const data = loadData();
   const now = new Date();
   if (data.event.cutoff && new Date(data.event.cutoff) < now) {

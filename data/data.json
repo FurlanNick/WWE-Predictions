@@ -1,1 +1,9 @@
-{"event":{"name":"","cutoff":null},"matches":[],"users":{},"results":{}}
+{
+  "event": {
+    "name": "",
+    "cutoff": "2024-12-25T20:00:00.000Z"
+  },
+  "matches": [],
+  "users": {},
+  "results": {}
+}
