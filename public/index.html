@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WWE Predictions</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold:#F5C518;--gold-dark:#C9A200;--red:#CC0000;--red-bright:#FF1A1A;
+    --bg:#0A0A0A;--bg2:#111111;--bg3:#1A1A1A;--bg4:#222222;
+    --border:#2A2A2A;--border2:#333333;
+    --text:#EEEEEE;--text2:#AAAAAA;--text3:#666666;
+    --success:#22C55E;--danger:#EF4444;
+    --font-head:'Barlow Condensed',sans-serif;--font-body:'Barlow',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden}
+
+  header{background:var(--bg2);border-bottom:2px solid var(--gold);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100}
+  .header-logo{font-family:var(--font-head);font-weight:900;font-size:1.6rem;letter-spacing:.05em;color:var(--gold);text-transform:uppercase}
+  .header-logo span{color:var(--text)}
+  .header-right{display:flex;align-items:center;gap:12px}
+  .user-badge{background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:6px 14px;font-size:.85rem;color:var(--text2);cursor:pointer;transition:all .2s}
+  .user-badge:hover,.user-badge.active{border-color:var(--gold);color:var(--gold)}
+  .admin-btn{background:transparent;border:1px solid var(--border2);color:var(--text3);padding:6px 14px;border-radius:6px;font-family:var(--font-body);font-size:.8rem;cursor:pointer;transition:all .2s;letter-spacing:.05em;text-transform:uppercase}
+  .admin-btn:hover{border-color:var(--red);color:var(--red)}
+  .admin-btn.active{background:var(--red);border-color:var(--red);color:white}
+
+  .nav-tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.5rem;overflow-x:auto}
+  .nav-tab{padding:14px 20px;font-family:var(--font-head);font-size:1rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;user-select:none}
+  .nav-tab:hover{color:var(--text2)}
+  .nav-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+  main{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+  .view{display:none}
+  .view.active{display:block}
+
+  .event-hero{background:var(--bg2);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:8px;padding:2rem;margin-bottom:2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+  .event-name{font-family:var(--font-head);font-size:2.5rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--gold)}
+  .cutoff-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:4px}
+  .cutoff-time{font-family:var(--font-head);font-size:1.3rem;font-weight:700;color:var(--text)}
+  .cutoff-time.expired{color:var(--danger)}
+
+  /* SIGN IN PROMPT */
+  .signin-container{max-width:460px;margin:4rem auto;text-align:center}
+  .signin-icon{font-size:4rem;margin-bottom:1rem}
+  .signin-title{font-family:var(--font-head);font-size:2.2rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem}
+  .signin-subtitle{color:var(--text2);margin-bottom:2rem;font-size:.95rem}
+
+  /* INPUTS & BUTTONS */
+  input[type=text],input[type=password],input[type=datetime-local],select,textarea{background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 14px;border-radius:6px;font-family:var(--font-body);font-size:.95rem;width:100%;transition:border-color .2s;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+  select option{background:var(--bg3)}
+  .btn{padding:10px 20px;border-radius:6px;font-family:var(--font-head);font-size:1rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:none;transition:all .2s;white-space:nowrap;display:inline-block}
+  .btn-primary{background:var(--gold);color:#000}
+  .btn-primary:hover{background:var(--gold-dark)}
+  .btn-danger{background:var(--red);color:white}
+  .btn-danger:hover{background:var(--red-bright)}
+  .btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+  .btn-outline:hover{border-color:var(--text2);color:var(--text)}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text3);padding:5px 10px;border-radius:4px;font-family:var(--font-head);font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s}
+  .btn-ghost:hover{border-color:var(--border2);color:var(--text2)}
+  .btn-sm{padding:6px 12px;font-size:.8rem}
+  label{font-size:.85rem;color:var(--text2);display:block;margin-bottom:4px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .form-row.full{grid-template-columns:1fr}
+  .msg{padding:10px 14px;border-radius:6px;font-size:.9rem;margin-bottom:1rem}
+  .msg-error{background:rgba(239,68,68,.15);border:1px solid var(--danger);color:#fca5a5}
+  .msg-success{background:rgba(34,197,94,.12);border:1px solid var(--success);color:#86efac}
+
+  /* MATCH CARDS - PICKS VIEW */
+  .match-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:2rem;overflow:hidden}
+  .match-header{background:var(--bg3);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+  .match-number{font-family:var(--font-head);font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)}
+  .match-title{font-family:var(--font-head);font-size:1.3rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  .match-type-badge{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;padding:3px 10px;border-radius:20px;background:var(--bg4);color:var(--text3);border:1px solid var(--border)}
+
+  /* WRESTLERS LAYOUT - visual match-up style */
+  .match-body{padding:20px}
+
+  /* 2-person: big side-by-side layout */
+  .wrestlers-vs{display:flex;align-items:stretch;gap:0}
+  .vs-side{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;border-radius:8px;padding:16px 12px;border:2px solid transparent;transition:all .15s;background:var(--bg3);user-select:none}
+  .vs-side:hover{border-color:var(--gold);background:var(--bg4);transform:translateY(-2px)}
+  .vs-side.selected{border-color:var(--gold);background:rgba(245,197,24,.08)}
+  .vs-side.selected .vs-name{color:var(--gold)}
+  .vs-side.locked{cursor:default}
+  .vs-side.locked:hover{transform:none;border-color:transparent;background:var(--bg3)}
+  .vs-side.result-winner{border-color:var(--gold);background:rgba(245,197,24,.1)}
+  .vs-side.result-loser{opacity:.4}
+  .vs-divider{display:flex;align-items:center;justify-content:center;padding:0 12px;flex-shrink:0}
+  .vs-text{font-family:var(--font-head);font-size:1.6rem;font-weight:900;color:var(--text3);letter-spacing:.1em}
+  .vs-photo{width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid var(--border2);background:var(--bg4)}
+  .vs-photo-placeholder{width:110px;height:110px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:2rem;font-weight:900;border:3px solid var(--border2);background:var(--bg4)}
+  .vs-name{font-family:var(--font-head);font-size:1.1rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-align:center;line-height:1.2}
+  .vs-check{font-size:1.1rem;opacity:0;transition:opacity .15s;color:var(--gold)}
+  .vs-side.selected .vs-check{opacity:1}
+
+  /* Multi-person grid (3+) */
+  .wrestlers-grid{display:grid;gap:10px}
+  .wrestlers-grid.count-3{grid-template-columns:repeat(3,1fr)}
+  .wrestlers-grid.count-4{grid-template-columns:repeat(4,1fr)}
+  .wrestlers-grid.count-5{grid-template-columns:repeat(5,1fr)}
+  .wrestlers-grid.count-6{grid-template-columns:repeat(3,1fr)}
+  .wrestlers-grid.count-7{grid-template-columns:repeat(4,1fr)}
+  .wrestlers-grid.count-8{grid-template-columns:repeat(4,1fr)}
+  .wrestler-option{background:var(--bg3);border:2px solid var(--border);border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;user-select:none}
+  .wrestler-option:hover{border-color:var(--gold);background:var(--bg4);transform:translateY(-2px)}
+  .wrestler-option.selected{border-color:var(--gold);background:rgba(245,197,24,.08)}
+  .wrestler-option.selected .wrestler-name{color:var(--gold)}
+  .wrestler-option.locked{cursor:default}
+  .wrestler-option.locked:hover{transform:none;border-color:var(--border);background:var(--bg3)}
+  .wrestler-option.result-winner{border-color:var(--gold);background:rgba(245,197,24,.1)}
+  .wrestler-option.result-loser{opacity:.4}
+  .wrestler-avatar{width:72px;height:72px;border-radius:50%;object-fit:cover;margin:0 auto 8px;display:block;border:2px solid var(--border2);background:var(--bg4)}
+  .wrestler-avatar-placeholder{width:72px;height:72px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:1.5rem;font-weight:900;background:var(--bg4);border:2px solid var(--border2)}
+  .wrestler-name{font-family:var(--font-head);font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text);line-height:1.2}
+  .checkmark{font-size:1rem;margin-top:4px;opacity:0;transition:opacity .15s;color:var(--gold)}
+  .wrestler-option.selected .checkmark{opacity:1}
+
+  .picks-summary-bar{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:8px}
+  .picks-summary-count{font-family:var(--font-head);font-size:1.2rem;font-weight:700;color:var(--gold)}
+
+  /* SCOREBOARD */
+  .scoreboard-wrapper{overflow-x:auto}
+  .scoreboard-table{width:100%;border-collapse:collapse;min-width:600px}
+  .scoreboard-table th{background:var(--bg3);padding:12px 10px;font-family:var(--font-head);font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);border:1px solid var(--border);text-align:center;white-space:nowrap}
+  .scoreboard-table th.match-col{text-align:left;min-width:180px;max-width:260px}
+  .scoreboard-table td{padding:10px;border:1px solid var(--border);text-align:center;font-size:.9rem;vertical-align:middle}
+  .scoreboard-table td.match-info{text-align:left;background:var(--bg2)}
+  .match-info-title{font-family:var(--font-head);font-size:.95rem;font-weight:700;text-transform:uppercase;color:var(--text)}
+  .match-info-winner{font-size:.8rem;color:var(--gold);margin-top:2px}
+  .pick-cell{background:var(--bg)}
+  .pick-correct{background:rgba(34,197,94,.1);color:var(--success);font-size:1.2rem}
+  .pick-wrong{background:rgba(239,68,68,.08);color:var(--danger);font-size:1.2rem}
+  .score-total{background:var(--bg3);font-family:var(--font-head);font-size:1rem;font-weight:900;color:var(--gold)}
+  .user-header-name{font-family:var(--font-head);font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gold)}
+
+  /* ADMIN PANEL */
+  .admin-section{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin-bottom:1.5rem}
+  .admin-section-title{font-family:var(--font-head);font-size:1.2rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+  .section-hint{font-size:.82rem;color:var(--text3);margin-bottom:1rem;line-height:1.5}
+
+  /* MATCH ADMIN LIST - drag & drop */
+  .match-admin-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:grab;transition:all .2s}
+  .match-admin-item:active{cursor:grabbing}
+  .match-admin-item.drag-over{border-color:var(--gold);background:rgba(245,197,24,.06)}
+  .match-admin-item.dragging{opacity:.4;transform:scale(.98)}
+  .drag-handle{color:var(--text3);font-size:1.2rem;cursor:grab;flex-shrink:0;user-select:none;padding:0 4px}
+  .match-admin-title{font-family:var(--font-head);font-size:1rem;font-weight:700;text-transform:uppercase;flex:1;min-width:120px}
+  .match-admin-wrestlers{font-size:.8rem;color:var(--text2);flex:2;min-width:180px}
+  .match-admin-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .result-select{background:var(--bg4);border:1px solid var(--border2);color:var(--text);padding:5px 10px;border-radius:4px;font-size:.85rem;cursor:pointer;outline:none}
+  .result-select.has-winner{border-color:var(--gold);color:var(--gold)}
+
+  /* USER MANAGEMENT */
+  .user-admin-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 16px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .user-admin-name{font-family:var(--font-head);font-size:1rem;font-weight:700;text-transform:uppercase}
+  .user-admin-picks{font-size:.8rem;color:var(--text3)}
+
+  /* WRESTLER IMAGE SECTION */
+  .wrestler-img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:1rem}
+  .wrestler-img-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center}
+  .wrestler-img-thumb{width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--border2);margin:0 auto 6px;display:block;background:var(--bg4)}
+  .wrestler-img-name{font-family:var(--font-head);font-size:.85rem;font-weight:700;text-transform:uppercase;color:var(--text2);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .wrestler-img-status{font-size:.7rem;color:var(--text3);margin-bottom:6px}
+  .wrestler-img-status.ok{color:var(--success)}
+  .wrestler-img-status.loading{color:var(--gold)}
+  .wrestler-img-status.err{color:var(--danger)}
+
+  /* WRESTLERS INPUT LIST */
+  .wrestlers-input-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+  .wrestler-input-row{display:flex;gap:8px}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem}
+  .modal{background:var(--bg2);border:1px solid var(--border2);border-top:3px solid var(--gold);border-radius:8px;padding:2rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+  .modal-title{font-family:var(--font-head);font-size:1.5rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em;margin-bottom:1.5rem}
+  .modal-footer{display:flex;gap:10px;margin-top:1.5rem}
+
+  .empty-state{text-align:center;padding:3rem;color:var(--text3);font-size:.95rem}
+  .empty-state-icon{font-size:2.5rem;margin-bottom:.5rem}
+
+  @media(max-width:600px){
+    .form-row{grid-template-columns:1fr}
+    .wrestlers-grid.count-3,.wrestlers-grid.count-4,.wrestlers-grid.count-5,.wrestlers-grid.count-6,.wrestlers-grid.count-7,.wrestlers-grid.count-8{grid-template-columns:1fr 1fr}
+    .wrestlers-vs{flex-direction:column;gap:8px}
+    .vs-divider{padding:4px 0}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">⚡ <span>WWE</span> Predictions</div>
+  <div class="header-right">
+    <div class="user-badge" id="userBadge" onclick="showSignIn()" title="Click to change user">
+      <span id="userBadgeText">Sign In</span>
+    </div>
+    <button class="admin-btn" id="adminBtn" onclick="toggleAdminModal()">Admin</button>
+  </div>
+</header>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" data-view="picks" onclick="showView('picks',this)">Make Picks</div>
+  <div class="nav-tab" data-view="scoreboard" onclick="showView('scoreboard',this)">Scoreboard</div>
+  <div class="nav-tab" data-view="admin" id="adminTabBtn" style="display:none;" onclick="showView('admin',this)">Admin Panel</div>
+</div>
+
+<main>
+  <div class="view active" id="view-picks">
+    <div id="eventHero" style="display:none;"></div>
+    <div id="picksContent"></div>
+  </div>
+  <div class="view" id="view-scoreboard">
+    <div id="scoreboardContent"></div>
+  </div>
+  <div class="view" id="view-admin">
+    <div id="adminContent"></div>
+  </div>
+</main>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal-overlay" id="adminModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Admin Login</div>
+    <div id="loginMsg"></div>
+    <label>Password</label>
+    <input type="password" id="adminPasswordInput" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    <div class="modal-footer">
+      <button class="btn btn-primary" style="flex:1" onclick="doAdminLogin()">Login</button>
+      <button class="btn btn-outline" onclick="closeModal('adminModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIGN IN MODAL -->
+<div class="modal-overlay" id="signInModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Enter Your Name</div>
+    <p style="color:var(--text2);font-size:.9rem;margin-bottom:1rem;">Enter your name to track your predictions. Same name = same account.</p>
+    <div id="signInMsg"></div>
+    <label>Your Name</label>
+    <input type="text" id="signInName" placeholder="e.g. John Smith" onkeydown="if(event.key==='Enter')doSignIn()" maxlength="40">
+    <div class="modal-footer">
+      <button class="btn btn-primary" style="flex:1" onclick="doSignIn()">Let's Go!</button>
+      <button class="btn btn-outline" onclick="closeModal('signInModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MATCH MODAL -->
+<div class="modal-overlay" id="editMatchModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Edit Match</div>
+    <input type="hidden" id="editMatchId">
+    <div id="editMatchMsg"></div>
+    <div class="form-row">
+      <div>
+        <label>Match Title / Championship</label>
+        <input type="text" id="editMatchTitle" placeholder="e.g. WWE Championship">
+      </div>
+      <div>
+        <label>Match Type Label</label>
+        <input type="text" id="editMatchType" placeholder="e.g. Singles, Triple Threat">
+      </div>
+    </div>
+    <label>Wrestlers</label>
+    <div class="wrestlers-input-list" id="editWrestlerInputs"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;margin-bottom:4px;">
+      <button class="btn btn-outline btn-sm" onclick="addEditWrestlerInput()">+ Add Wrestler</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditMatch()">Save Changes</button>
+      <button class="btn btn-outline" onclick="closeModal('editMatchModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let appData = null;
+let currentUser = null;
+let isAdmin = false;
+let adminViewDirty = false; // true when admin is actively editing a form
+let refreshPaused = false;
+
+// ============================================================
+// UTILS
+// ============================================================
+function el(id){ return document.getElementById(id); }
+
+function closeModal(id){ el(id).style.display='none'; }
+
+function showMsg(elId, text, isError){
+  const e=el(elId);
+  if(!e)return;
+  e.innerHTML=`<div class="msg ${isError?'msg-error':'msg-success'}">${text}</div>`;
+  setTimeout(()=>{ if(e) e.innerHTML=''; },4000);
+}
+
+function wrestlerInitials(name){
+  return name.split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'??';
+}
+
+const COLORS=['#C9A200','#CC0000','#2563EB','#16A34A','#9333EA','#EA580C','#0891B2','#BE185D'];
+function avatarColor(name){ return COLORS[name.charCodeAt(0)%COLORS.length]; }
+
+function avatarHtml(name, size=72){
+  const safeName = name.toLowerCase().replace(/[^a-z0-9]/g,'_');
+  const cached = imageCache[safeName];
+  const initials = wrestlerInitials(name);
+  const color = avatarColor(name);
+  if(cached){
+    return `<img src="${cached}" class="wrestler-avatar" style="width:${size}px;height:${size}px;" alt="${name}" onerror="this.outerHTML=placeholderHtml('${initials}','${color}',${size})">`;
+  }
+  return `<div class="wrestler-avatar-placeholder" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.32)}px;color:${color};">${initials}</div>`;
+}
+
+function placeholderHtml(initials,color,size){
+  return `<div class="wrestler-avatar-placeholder" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.32)}px;color:${color};">${initials}</div>`;
+}
+
+// Image cache: safeName -> url
+let imageCache = {};
+
+function buildImageCache(){
+  if(!appData||!appData.matches) return;
+  // Get all unique wrestler names across all matches
+  const names = new Set();
+  appData.matches.forEach(m=>{ (m.wrestlers||[]).forEach(w=>names.add(w)); });
+  // Check which ones have cached images by pinging known paths
+  names.forEach(name=>{
+    const safeName = name.toLowerCase().replace(/[^a-z0-9]/g,'_');
+    if(imageCache[safeName]) return;
+    // Try common extensions
+    ['jpg','png','webp'].forEach(ext=>{
+      const url = `/wrestler-images/${safeName}.${ext}`;
+      const img = new Image();
+      img.onload = ()=>{ imageCache[safeName]=url; };
+      img.src = url;
+    });
+  });
+}
+
+// ============================================================
+// DATA LOADING - smart refresh (don't wipe forms)
+// ============================================================
+async function loadData(forceRender=false){
+  try{
+    const res = await fetch('/api/data');
+    appData = await res.json();
+    isAdmin = appData.isAdmin;
+    el('adminTabBtn').style.display = isAdmin?'block':'none';
+    el('adminBtn').className = isAdmin?'admin-btn active':'admin-btn';
+    buildImageCache();
+    // Only re-render current view if admin panel isn't being edited
+    const activeView = document.querySelector('.view.active');
+    const viewId = activeView ? activeView.id.replace('view-','') : 'picks';
+    if(forceRender || viewId !== 'admin' || !adminViewDirty){
+      renderView(viewId);
+    }
+  } catch(e){ console.error('Load error',e); }
+}
+
+// Mark admin form as dirty whenever user types in any admin form field
+document.addEventListener('input', e=>{
+  if(el('view-admin').contains(e.target)) adminViewDirty = true;
+});
+document.addEventListener('change', e=>{
+  if(el('view-admin').contains(e.target)){
+    // Result selects should still trigger immediately
+    if(e.target.classList.contains('result-select')){
+      const matchId = e.target.dataset.matchId;
+      if(matchId) setResult(matchId, e.target);
+    } else {
+      adminViewDirty = true;
+    }
+  }
+});
+
+// ============================================================
+// VIEWS
+// ============================================================
+function showView(view, tab){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  el(`view-${view}`).classList.add('active');
+  if(tab) tab.classList.add('active');
+  adminViewDirty = false;
+  renderView(view);
+}
+
+function renderView(view){
+  if(view==='picks') renderPicks();
+  else if(view==='scoreboard') renderScoreboard();
+  else if(view==='admin' && !adminViewDirty) renderAdmin();
+}
+
+// ============================================================
+// USER
+// ============================================================
+function loadUser(){
+  const stored = localStorage.getItem('wwe_user');
+  if(stored){
+    currentUser = JSON.parse(stored);
+    el('userBadgeText').textContent = currentUser.name;
+    el('userBadge').classList.add('active');
+  }
+}
+
+function showSignIn(){
+  el('signInName').value = currentUser ? currentUser.name : '';
+  el('signInModal').style.display='flex';
+  setTimeout(()=>el('signInName').focus(),100);
+}
+
+async function doSignIn(){
+  const name = el('signInName').value.trim();
+  if(!name){ showMsg('signInMsg','Please enter your name',true); return; }
+  const res = await fetch('/api/users/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+  const data = await res.json();
+  if(data.user){
+    currentUser = data.user;
+    localStorage.setItem('wwe_user', JSON.stringify(currentUser));
+    el('userBadgeText').textContent = currentUser.name;
+    el('userBadge').classList.add('active');
+    closeModal('signInModal');
+    await loadData(true);
+  }
+}
+
+// ============================================================
+// ADMIN AUTH
+// ============================================================
+function toggleAdminModal(){
+  if(isAdmin){
+    fetch('/api/admin/logout',{method:'POST'}).then(()=>{ isAdmin=false; loadData(true); });
+    return;
+  }
+  el('adminModal').style.display='flex';
+  setTimeout(()=>el('adminPasswordInput').focus(),100);
+}
+
+async function doAdminLogin(){
+  const pw = el('adminPasswordInput').value;
+  const res = await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+  if(res.ok){
+    el('adminPasswordInput').value='';
+    closeModal('adminModal');
+    await loadData(true);
+    showView('admin', document.querySelector('[data-view="admin"]'));
+  } else {
+    showMsg('loginMsg','Incorrect password',true);
+    el('adminPasswordInput').value='';
+  }
+}
+
+// ============================================================
+// PICKS VIEW
+// ============================================================
+function renderPicks(){
+  if(!appData) return;
+  const {event,matches,cutoffPassed} = appData;
+
+  const hero = el('eventHero');
+  if(event&&event.name){
+    hero.style.display='flex';
+    let cutoffHtml='';
+    if(event.cutoff){
+      const dt=new Date(event.cutoff);
+      cutoffHtml=`<div>
+        <div class="cutoff-label">Picks Cutoff</div>
+        <div class="cutoff-time ${cutoffPassed?'expired':''}">${dt.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div>
+        ${cutoffPassed?'<div style="font-size:.75rem;color:var(--danger);margin-top:2px;">🔒 LOCKED</div>':''}
+      </div>`;
+    }
+    hero.innerHTML=`<div class="event-name">${event.name}</div>${cutoffHtml}`;
+  } else { hero.style.display='none'; }
+
+  const content = el('picksContent');
+
+  if(!currentUser){
+    content.innerHTML=`<div class="signin-container">
+      <div class="signin-icon">🎤</div>
+      <div class="signin-title">Ready to Predict?</div>
+      <p class="signin-subtitle">Enter your name to start making picks for the event.</p>
+      <button class="btn btn-primary" style="width:100%;font-size:1.1rem;padding:14px;" onclick="showSignIn()">Enter Your Name</button>
+    </div>`;
+    return;
+  }
+
+  if(!matches||matches.length===0){
+    content.innerHTML=`<div class="empty-state"><div class="empty-state-icon">🏟️</div><p>No matches added yet. Check back soon!</p></div>`;
+    return;
+  }
+
+  const userPicks = (appData.users[currentUser.id]||{}).picks||{};
+  const pickCount = Object.keys(userPicks).length;
+  const locked = cutoffPassed;
+
+  let html=`<div class="picks-summary-bar">
+    <span style="font-size:.9rem;color:var(--text2);">Your picks: <span class="picks-summary-count">${pickCount} / ${matches.length}</span></span>
+    ${locked?'<span style="color:var(--danger);font-size:.85rem;font-weight:600;">🔒 Picks are locked</span>':'<span style="color:var(--text3);font-size:.8rem;">Click a wrestler to select your pick</span>'}
+  </div>`;
+
+  matches.forEach((match,idx)=>{
+    const count = match.wrestlers.length;
+    const userPick = userPicks[match.id];
+    const winner = appData.results[match.id];
+
+    html+=`<div class="match-card">
+      <div class="match-header">
+        <div>
+          <div class="match-number">Match ${idx+1}</div>
+          <div class="match-title">${match.title}</div>
+        </div>
+        <span class="match-type-badge">${match.matchType||(count+'-Way')}</span>
+      </div>
+      <div class="match-body">`;
+
+    if(count===2){
+      // Big head-to-head layout
+      const [w1,w2] = match.wrestlers;
+      const lockClass = locked?' locked':'';
+      const clickFn = locked ? '' : `onclick="pickWrestler('${match.id}','`;
+      function sideClass(w){
+        let c='vs-side'+lockClass;
+        if(userPick===w) c+=' selected';
+        if(winner&&winner===w) c+=' result-winner';
+        if(winner&&winner!==w) c+=' result-loser';
+        return c;
+      }
+      html+=`<div class="wrestlers-vs">
+        <div class="${sideClass(w1)}" onclick="${locked?'':`pickWrestler('${match.id}','${w1.replace(/'/g,"\\'")}',this)`}">
+          ${avatarHtml(w1,110).replace('wrestler-avatar','vs-photo').replace('wrestler-avatar-placeholder','vs-photo-placeholder')}
+          <div class="vs-name">${w1}</div>
+          <div class="vs-check">✓ MY PICK</div>
+        </div>
+        <div class="vs-divider"><div class="vs-text">VS</div></div>
+        <div class="${sideClass(w2)}" onclick="${locked?'':`pickWrestler('${match.id}','${w2.replace(/'/g,"\\'")}',this)`}">
+          ${avatarHtml(w2,110).replace('wrestler-avatar','vs-photo').replace('wrestler-avatar-placeholder','vs-photo-placeholder')}
+          <div class="vs-name">${w2}</div>
+          <div class="vs-check">✓ MY PICK</div>
+        </div>
+      </div>`;
+    } else {
+      // Grid layout for 3+
+      html+=`<div class="wrestlers-grid count-${Math.min(count,8)}">`;
+      match.wrestlers.forEach(wrestler=>{
+        let cls='wrestler-option';
+        if(userPick===wrestler) cls+=' selected';
+        if(locked) cls+=' locked';
+        if(winner&&winner===wrestler) cls+=' result-winner';
+        if(winner&&winner!==wrestler) cls+=' result-loser';
+        html+=`<div class="${cls}" onclick="${locked?'':`pickWrestler('${match.id}','${wrestler.replace(/'/g,"\\'")}',this)`}">
+          ${avatarHtml(wrestler,72)}
+          <div class="wrestler-name">${wrestler}</div>
+          <div class="checkmark">✓</div>
+        </div>`;
+      });
+      html+=`</div>`;
+    }
+
+    html+=`</div></div>`;
+  });
+
+  content.innerHTML=html;
+}
+
+async function pickWrestler(matchId, wrestler, elem){
+  if(!currentUser){ showSignIn(); return; }
+  if(appData.cutoffPassed) return;
+
+  // Optimistic UI
+  const card = elem.closest('.match-card');
+  card.querySelectorAll('.vs-side,.wrestler-option').forEach(o=>o.classList.remove('selected'));
+  elem.classList.add('selected');
+
+  const picks={};
+  picks[matchId]=wrestler;
+  await fetch('/api/picks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:currentUser.id,picks})});
+
+  if(!appData.users[currentUser.id]) appData.users[currentUser.id]={picks:{}};
+  appData.users[currentUser.id].picks[matchId]=wrestler;
+  const bar=document.querySelector('.picks-summary-count');
+  if(bar) bar.textContent=`${Object.keys(appData.users[currentUser.id].picks).length} / ${appData.matches.length}`;
+}
+
+// ============================================================
+// SCOREBOARD
+// ============================================================
+function renderScoreboard(){
+  if(!appData) return;
+  const {matches,users,results} = appData;
+  const content = el('scoreboardContent');
+  const userList = Object.values(users);
+
+  if(!matches||matches.length===0){
+    content.innerHTML=`<div class="empty-state"><div class="empty-state-icon">📊</div><p>No matches yet.</p></div>`;
+    return;
+  }
+  if(userList.length===0){
+    content.innerHTML=`<div class="empty-state"><div class="empty-state-icon">👥</div><p>No predictors yet.</p></div>`;
+    return;
+  }
+
+  const scores={};
+  userList.forEach(u=>{ scores[u.id]=0; });
+  matches.forEach(m=>{
+    const winner=results[m.id];
+    if(!winner) return;
+    userList.forEach(u=>{ if((u.picks||{})[m.id]===winner) scores[u.id]++; });
+  });
+  userList.sort((a,b)=>scores[b.id]-scores[a.id]);
+
+  const decided = Object.keys(results).length;
+
+  let html=`<div class="scoreboard-wrapper"><table class="scoreboard-table"><thead>
+    <tr><th class="match-col">Match</th>${userList.map(u=>`<th><div class="user-header-name">${u.name}</div></th>`).join('')}</tr>
+    <tr><th class="match-col" style="color:var(--gold);">Total Score</th>${userList.map(u=>`<th class="score-total">${scores[u.id]} / ${decided}</th>`).join('')}</tr>
+  </thead><tbody>`;
+
+  matches.forEach(match=>{
+    const winner=results[match.id];
+    html+=`<tr>
+      <td class="match-info">
+        <div class="match-info-title">${match.title}</div>
+        ${winner?`<div class="match-info-winner">✓ ${winner}</div>`:'<div style="font-size:.75rem;color:var(--text3);">Pending</div>'}
+      </td>`;
+    userList.forEach(u=>{
+      const pick=(u.picks||{})[match.id];
+      if(!pick){ html+=`<td class="pick-cell"><span style="color:var(--text3);font-size:.8rem;">—</span></td>`; }
+      else if(winner){
+        const correct=pick===winner;
+        html+=`<td class="pick-cell ${correct?'pick-correct':'pick-wrong'}">${correct?'✓':'✗'}<div style="font-size:.7rem;margin-top:2px;">${pick}</div></td>`;
+      } else {
+        html+=`<td class="pick-cell" style="color:var(--text2);font-size:.8rem;font-style:italic;">${pick}</td>`;
+      }
+    });
+    html+=`</tr>`;
+  });
+
+  html+=`</tbody></table></div>`;
+  content.innerHTML=html;
+}
+
+// ============================================================
+// ADMIN PANEL
+// ============================================================
+function renderAdmin(){
+  if(!isAdmin){ el('adminContent').innerHTML='<div class="empty-state">Not logged in.</div>'; return; }
+  const {event,matches,results,users} = appData;
+
+  // Get all unique wrestler names for image manager
+  const allWrestlers = new Set();
+  (matches||[]).forEach(m=>(m.wrestlers||[]).forEach(w=>allWrestlers.add(w)));
+
+  let html=`
+  <!-- EVENT SETTINGS -->
+  <div class="admin-section">
+    <div class="admin-section-title">Event Settings</div>
+    <div class="form-row">
+      <div>
+        <label>Event Name</label>
+        <input type="text" id="adminEventName" value="${(event.name||'').replace(/"/g,'&quot;')}" placeholder="e.g. WrestleMania 41">
+      </div>
+      <div>
+        <label>Picks Cutoff Date/Time</label>
+        <input type="datetime-local" id="adminCutoff" value="${event.cutoff?new Date(event.cutoff).toISOString().slice(0,16):''}">
+      </div>
+    </div>
+    <div id="eventMsg"></div>
+    <button class="btn btn-primary" onclick="saveEvent()">Save Event Settings</button>
+  </div>
+
+  <!-- ADD MATCH -->
+  <div class="admin-section">
+    <div class="admin-section-title">Add New Match</div>
+    <div class="form-row">
+      <div>
+        <label>Match Title / Championship</label>
+        <input type="text" id="newMatchTitle" placeholder="e.g. WWE Championship">
+      </div>
+      <div>
+        <label>Match Type Label</label>
+        <input type="text" id="newMatchType" placeholder="e.g. Singles, Triple Threat, Fatal 4-Way">
+      </div>
+    </div>
+    <label>Wrestlers (2–8)</label>
+    <div class="wrestlers-input-list" id="wrestlerInputs">
+      <div class="wrestler-input-row"><input type="text" placeholder="Wrestler 1"><button class="btn-ghost" onclick="removeWrestlerInput(this)">✕</button></div>
+      <div class="wrestler-input-row"><input type="text" placeholder="Wrestler 2"><button class="btn-ghost" onclick="removeWrestlerInput(this)">✕</button></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;">
+      <button class="btn btn-outline btn-sm" onclick="addWrestlerInput()">+ Add Wrestler</button>
+    </div>
+    <div id="addMatchMsg" style="margin-top:8px;"></div>
+    <button class="btn btn-primary" style="margin-top:12px;" onclick="addMatch()">Add Match</button>
+  </div>
+
+  <!-- MANAGE MATCHES (drag to reorder) -->
+  <div class="admin-section">
+    <div class="admin-section-title">Matches & Results</div>
+    <p class="section-hint">Drag the ≡ handle to reorder matches. Set winner after each match concludes.</p>
+    <div id="matchAdminList">`;
+
+  if(!matches||matches.length===0){
+    html+=`<div class="empty-state" style="padding:1.5rem;"><p>No matches yet.</p></div>`;
+  } else {
+    matches.forEach((match,idx)=>{
+      const winner=results[match.id]||'';
+      html+=`<div class="match-admin-item" draggable="true" data-id="${match.id}"
+          ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dragDrop(event)" ondragleave="dragLeave(event)" ondragend="dragEnd(event)">
+        <span class="drag-handle" title="Drag to reorder">≡</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Match ${idx+1}</div>
+          <div class="match-admin-title">${match.title}</div>
+          <div class="match-admin-wrestlers">${match.wrestlers.join(' · ')}</div>
+        </div>
+        <div class="match-admin-actions">
+          <select class="result-select ${winner?'has-winner':''}" data-match-id="${match.id}" onchange="setResult('${match.id}',this)">
+            <option value="">Pending...</option>
+            ${match.wrestlers.map(w=>`<option value="${w}" ${winner===w?'selected':''}>${w}</option>`).join('')}
+          </select>
+          <button class="btn-ghost" onclick="openEditMatch('${match.id}')">Edit</button>
+          <button class="btn-ghost" style="color:var(--danger);border-color:var(--danger);" onclick="deleteMatch('${match.id}')">Delete</button>
+        </div>
+      </div>`;
+    });
+  }
+
+  html+=`</div></div>
+
+  <!-- WRESTLER PHOTOS -->
+  <div class="admin-section">
+    <div class="admin-section-title">Wrestler Photos</div>
+    <p class="section-hint">Photos are fetched automatically from the web and cached. Click "Fetch All" to download photos for all wrestlers, or fetch individually. You can re-fetch to update a photo.</p>
+    <button class="btn btn-primary" onclick="fetchAllImages()" id="fetchAllBtn">Fetch All Photos</button>
+    <div class="wrestler-img-grid" id="wrestlerImgGrid">`;
+
+  if(allWrestlers.size===0){
+    html+=`<p style="color:var(--text3);font-size:.85rem;margin-top:1rem;">Add matches with wrestlers first.</p>`;
+  } else {
+    allWrestlers.forEach(name=>{
+      const safeName=name.toLowerCase().replace(/[^a-z0-9]/g,'_');
+      const cached=imageCache[safeName];
+      html+=`<div class="wrestler-img-item" id="imgItem_${safeName}">
+        ${cached?`<img src="${cached}" class="wrestler-img-thumb" alt="${name}">`:`<div class="wrestler-img-thumb" style="display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-weight:900;font-size:1.2rem;color:${avatarColor(name)};">${wrestlerInitials(name)}</div>`}
+        <div class="wrestler-img-name">${name}</div>
+        <div class="wrestler-img-status ${cached?'ok':''}" id="imgStatus_${safeName}">${cached?'✓ Cached':'No photo'}</div>
+        <button class="btn-ghost" style="font-size:.7rem;padding:3px 8px;" onclick="fetchSingleImage('${name.replace(/'/g,"\\'")}','${safeName}')">
+          ${cached?'Re-fetch':'Fetch'}
+        </button>
+      </div>`;
+    });
+  }
+
+  html+=`</div></div>
+
+  <!-- USER MANAGEMENT -->
+  <div class="admin-section">
+    <div class="admin-section-title">Manage Predictors</div>
+    <p class="section-hint">Remove duplicate or blank entries here.</p>
+    <div id="userAdminList">`;
+
+  const userList = Object.values(users||{});
+  if(userList.length===0){
+    html+=`<div class="empty-state" style="padding:1rem;"><p>No users yet.</p></div>`;
+  } else {
+    userList.forEach(u=>{
+      const pickCount=Object.keys(u.picks||{}).length;
+      html+=`<div class="user-admin-item">
+        <div>
+          <div class="user-admin-name">${u.name}</div>
+          <div class="user-admin-picks">${pickCount} pick${pickCount!==1?'s':''} submitted · ID: ${u.id}</div>
+        </div>
+        <button class="btn-ghost" style="color:var(--danger);border-color:var(--danger);flex-shrink:0;" onclick="deleteUser('${u.id}','${u.name.replace(/'/g,"\\'")}')">Remove</button>
+      </div>`;
+    });
+  }
+
+  html+=`</div></div>`;
+  el('adminContent').innerHTML=html;
+  adminViewDirty=false;
+}
+
+// ============================================================
+// ADMIN ACTIONS
+// ============================================================
+async function saveEvent(){
+  adminViewDirty=false;
+  const name=el('adminEventName').value.trim();
+  const cutoffRaw=el('adminCutoff').value;
+  const cutoff=cutoffRaw?new Date(cutoffRaw).toISOString():null;
+  await fetch('/api/admin/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,cutoff})});
+  showMsg('eventMsg','Event settings saved!',false);
+  await loadData(); // safe - we just saved
+}
+
+function addWrestlerInput(){
+  const list=el('wrestlerInputs');
+  if(list.children.length>=8) return;
+  const row=document.createElement('div');
+  row.className='wrestler-input-row';
+  row.innerHTML=`<input type="text" placeholder="Wrestler ${list.children.length+1}"><button class="btn-ghost" onclick="removeWrestlerInput(this)">✕</button>`;
+  list.appendChild(row);
+}
+
+function removeWrestlerInput(btn){
+  const list=el('wrestlerInputs');
+  if(list.children.length<=2) return;
+  btn.closest('.wrestler-input-row').remove();
+}
+
+async function addMatch(){
+  adminViewDirty=false;
+  const title=el('newMatchTitle').value.trim();
+  const matchType=el('newMatchType').value.trim();
+  const inputs=el('wrestlerInputs').querySelectorAll('input');
+  const wrestlers=Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
+  if(!title){ showMsg('addMatchMsg','Please enter a match title',true); return; }
+  if(wrestlers.length<2){ showMsg('addMatchMsg','Please add at least 2 wrestlers',true); return; }
+  await fetch('/api/admin/matches',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,matchType:matchType||`${wrestlers.length}-Way`,wrestlers})});
+  el('newMatchTitle').value='';
+  el('newMatchType').value='';
+  el('wrestlerInputs').innerHTML=`
+    <div class="wrestler-input-row"><input type="text" placeholder="Wrestler 1"><button class="btn-ghost" onclick="removeWrestlerInput(this)">✕</button></div>
+    <div class="wrestler-input-row"><input type="text" placeholder="Wrestler 2"><button class="btn-ghost" onclick="removeWrestlerInput(this)">✕</button></div>`;
+  showMsg('addMatchMsg','Match added!',false);
+  await loadData(true);
+}
+
+async function deleteMatch(matchId){
+  if(!confirm('Delete this match and all associated picks?')) return;
+  await fetch(`/api/admin/matches/${matchId}`,{method:'DELETE'});
+  await loadData(true);
+}
+
+async function setResult(matchId, select){
+  const winner=select.value;
+  if(!winner) return;
+  select.className='result-select has-winner';
+  await fetch('/api/admin/results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({matchId,winner})});
+  await loadData(); // soft refresh - result selects stay
+}
+
+async function deleteUser(userId, userName){
+  if(!confirm(`Remove "${userName}" and all their picks? This cannot be undone.`)) return;
+  await fetch(`/api/admin/users/${userId}`,{method:'DELETE'});
+  await loadData(true);
+}
+
+// ============================================================
+// EDIT MATCH MODAL
+// ============================================================
+function openEditMatch(matchId){
+  const match = appData.matches.find(m=>m.id===matchId);
+  if(!match) return;
+  el('editMatchId').value=matchId;
+  el('editMatchTitle').value=match.title;
+  el('editMatchType').value=match.matchType||'';
+  const list=el('editWrestlerInputs');
+  list.innerHTML='';
+  match.wrestlers.forEach((w,i)=>{
+    const row=document.createElement('div');
+    row.className='wrestler-input-row';
+    row.innerHTML=`<input type="text" value="${w.replace(/"/g,'&quot;')}" placeholder="Wrestler ${i+1}"><button class="btn-ghost" onclick="removeEditWrestlerInput(this)">✕</button>`;
+    list.appendChild(row);
+  });
+  el('editMatchModal').style.display='flex';
+}
+
+function addEditWrestlerInput(){
+  const list=el('editWrestlerInputs');
+  if(list.children.length>=8) return;
+  const row=document.createElement('div');
+  row.className='wrestler-input-row';
+  row.innerHTML=`<input type="text" placeholder="Wrestler ${list.children.length+1}"><button class="btn-ghost" onclick="removeEditWrestlerInput(this)">✕</button>`;
+  list.appendChild(row);
+}
+
+function removeEditWrestlerInput(btn){
+  const list=el('editWrestlerInputs');
+  if(list.children.length<=2) return;
+  btn.closest('.wrestler-input-row').remove();
+}
+
+async function saveEditMatch(){
+  const matchId=el('editMatchId').value;
+  const title=el('editMatchTitle').value.trim();
+  const matchType=el('editMatchType').value.trim();
+  const inputs=el('editWrestlerInputs').querySelectorAll('input');
+  const wrestlers=Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
+  if(!title){ showMsg('editMatchMsg','Title required',true); return; }
+  if(wrestlers.length<2){ showMsg('editMatchMsg','At least 2 wrestlers required',true); return; }
+  await fetch(`/api/admin/matches/${matchId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,matchType:matchType||`${wrestlers.length}-Way`,wrestlers})});
+  closeModal('editMatchModal');
+  await loadData(true);
+}
+
+// ============================================================
+// DRAG & DROP REORDER
+// ============================================================
+let dragSrcId = null;
+
+function dragStart(e){
+  dragSrcId = e.currentTarget.dataset.id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+
+function dragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function dragLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function dragEnd(e){
+  document.querySelectorAll('.match-admin-item').forEach(el=>{
+    el.classList.remove('dragging','drag-over');
+  });
+}
+
+async function dragDrop(e){
+  e.preventDefault();
+  const targetId = e.currentTarget.dataset.id;
+  e.currentTarget.classList.remove('drag-over');
+  if(dragSrcId===targetId) return;
+
+  // Reorder in DOM + appData
+  const order = Array.from(document.querySelectorAll('.match-admin-item')).map(el=>el.dataset.id);
+  const srcIdx=order.indexOf(dragSrcId);
+  const tgtIdx=order.indexOf(targetId);
+  order.splice(srcIdx,1);
+  order.splice(tgtIdx,0,dragSrcId);
+
+  // Update server
+  await fetch('/api/admin/matches/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order})});
+  await loadData(true);
+}
+
+// ============================================================
+// WRESTLER IMAGES
+// ============================================================
+async function fetchSingleImage(wrestlerName, safeName){
+  const statusEl=el(`imgStatus_${safeName}`);
+  const itemEl=el(`imgItem_${safeName}`);
+  if(statusEl){ statusEl.textContent='Fetching...'; statusEl.className='wrestler-img-status loading'; }
+
+  const res=await fetch('/api/admin/fetch-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({wrestlerName})});
+  const data=await res.json();
+
+  if(data.success){
+    imageCache[safeName]=data.url+'?t='+Date.now();
+    if(statusEl){ statusEl.textContent='✓ Cached'; statusEl.className='wrestler-img-status ok'; }
+    if(itemEl){
+      const thumb=itemEl.querySelector('.wrestler-img-thumb');
+      if(thumb){
+        thumb.outerHTML=`<img src="${imageCache[safeName]}" class="wrestler-img-thumb" alt="${wrestlerName}">`;
+      }
+    }
+    // Refresh picks view to show new photos
+    if(document.querySelector('[data-view="picks"]')?.classList.contains('active')){
+      renderPicks();
+    }
+  } else {
+    if(statusEl){ statusEl.textContent='✗ Not found'; statusEl.className='wrestler-img-status err'; }
+  }
+}
+
+async function fetchAllImages(){
+  const btn=el('fetchAllBtn');
+  if(btn){ btn.textContent='Fetching...'; btn.disabled=true; }
+
+  const names=new Set();
+  (appData.matches||[]).forEach(m=>(m.wrestlers||[]).forEach(w=>names.add(w)));
+  const nameArr=Array.from(names);
+
+  for(const name of nameArr){
+    const safeName=name.toLowerCase().replace(/[^a-z0-9]/g,'_');
+    await fetchSingleImage(name, safeName);
+    await new Promise(r=>setTimeout(r,800)); // small delay to be polite
+  }
+
+  if(btn){ btn.textContent='Fetch All Photos'; btn.disabled=false; }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadUser();
+loadData(true);
+// Auto-refresh every 30s, but skip if admin is typing
+setInterval(()=>{ if(!adminViewDirty) loadData(); }, 30000);
+</script>
+</body>
+</html>

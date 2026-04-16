@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  wwe-predictions:
+    build: .
+    ports:
+      - "3050:3050"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - ADMIN_PASSWORD=wrestlemania
+      - SESSION_SECRET=change-me-to-something-random
+      - PORT=3050
+    restart: unless-stopped
