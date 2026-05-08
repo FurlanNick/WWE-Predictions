@@ -205,6 +205,7 @@
 <div class="nav-tabs">
   <div class="nav-tab active" data-view="picks" onclick="showView('picks',this)">Make Picks</div>
   <div class="nav-tab" data-view="scoreboard" onclick="showView('scoreboard',this)">Scoreboard</div>
+  <div class="nav-tab" data-view="events" onclick="showView('events',this)">Events</div>
   <div class="nav-tab" data-view="admin" id="adminTabBtn" style="display:none;" onclick="showView('admin',this)">Admin Panel</div>
 </div>
 
@@ -215,6 +216,9 @@
   </div>
   <div class="view" id="view-scoreboard">
     <div id="scoreboardContent"></div>
+  </div>
+  <div class="view" id="view-events">
+    <div id="eventsContent"></div>
   </div>
   <div class="view" id="view-admin">
     <div id="adminContent"></div>
@@ -257,6 +261,12 @@
     <input type="hidden" id="editMatchId">
     <div id="editMatchMsg"></div>
     <div class="form-row">
+      <div>
+        <label>Event</label>
+        <select id="newMatchEvent">
+          ${(events||[]).map(ev => `<option value="${ev.id}">${ev.name}</option>`).join('')}
+        </select>
+      </div>
       <div>
         <label>Match Title / Championship</label>
         <input type="text" id="editMatchTitle" placeholder="e.g. WWE Championship">
@@ -404,6 +414,7 @@ function showView(view, tab){
 function renderView(view){
   if(view==='picks') renderPicks();
   else if(view==='scoreboard') renderScoreboard();
+  if(view==='events') renderEventsView();
   else if(view==='admin' && !adminViewDirty) renderAdmin();
 }
 
@@ -471,10 +482,28 @@ async function doAdminLogin(){
 // ============================================================
 function renderPicks(){
   if(!appData) return;
-  const {event,matches,cutoffPassed} = appData;
+  const {events,matches} = appData;
+  const now = new Date();
+
+  let event = null;
+  let upcomingEvents = (events||[]).filter(e => {
+    if (!e.date) return false;
+    const evDate = new Date(e.date);
+    evDate.setDate(evDate.getDate() + 7);
+    return evDate >= now;
+  }).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  if (upcomingEvents.length > 0) {
+    event = upcomingEvents[0];
+  } else if (events && events.length > 0) {
+    event = [...events].sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+  }
+
+  const eventMatches = event ? (matches||[]).filter(m => m.eventId === event.id).sort((a,b)=>a.order-b.order) : [];
+  const cutoffPassed = event && event.cutoff ? new Date(event.cutoff) < now : false;
 
   const hero = el('eventHero');
-  if(event&&event.name){
+  if(event){
     hero.style.display='flex';
     let cutoffHtml='';
     if(event.cutoff){
@@ -497,6 +526,11 @@ function renderPicks(){
 
   const content = el('picksContent');
 
+  if(!event) {
+    hero.style.display='none';
+    content.innerHTML='<div class="empty-state"><div class="empty-state-icon">📅</div><p>No upcoming events.</p></div>';
+    return;
+  }
   if(!currentUser){
     content.innerHTML=`<div class="signin-container">
       <div class="signin-icon">🎤</div>
@@ -507,7 +541,7 @@ function renderPicks(){
     return;
   }
 
-  if(!matches||matches.length===0){
+  if(!eventMatches||eventMatches.length===0){
     content.innerHTML=`<div class="empty-state"><div class="empty-state-icon">🏟️</div><p>No matches added yet. Check back soon!</p></div>`;
     return;
   }
@@ -586,6 +620,11 @@ function renderPicks(){
 }
 
 async function pickWrestler(matchId, wrestler, elem){
+  if(!event) {
+    hero.style.display='none';
+    content.innerHTML='<div class="empty-state"><div class="empty-state-icon">📅</div><p>No upcoming events.</p></div>';
+    return;
+  }
   if(!currentUser){ showSignIn(); return; }
   if(appData.cutoffPassed) return;
 
@@ -609,11 +648,29 @@ async function pickWrestler(matchId, wrestler, elem){
 // ============================================================
 function renderScoreboard(){
   if(!appData) return;
-  const {matches,users,results} = appData;
+  const {events,matches,users,results} = appData;
+  const now = new Date();
+
+  let event = null;
+  let upcomingEvents = (events||[]).filter(e => {
+    if (!e.date) return false;
+    const evDate = new Date(e.date);
+    evDate.setDate(evDate.getDate() + 7);
+    return evDate >= now;
+  }).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  if (upcomingEvents.length > 0) {
+    event = upcomingEvents[0];
+  } else if (events && events.length > 0) {
+    event = [...events].sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+  }
+
+  const eventMatches = event ? (matches||[]).filter(m => m.eventId === event.id).sort((a,b)=>a.order-b.order) : [];
+  const cutoffPassed = event && event.cutoff ? new Date(event.cutoff) < now : false;
   const content = el('scoreboardContent');
   const userList = Object.values(users);
 
-  if(!matches||matches.length===0){
+  if(!eventMatches||eventMatches.length===0){
     content.innerHTML=`<div class="empty-state"><div class="empty-state-icon">📊</div><p>No matches yet.</p></div>`;
     return;
   }
@@ -624,7 +681,7 @@ function renderScoreboard(){
 
   const scores={};
   userList.forEach(u=>{ scores[u.id]=0; });
-  matches.forEach(m=>{
+  eventMatches.forEach(m=>{
     const winner=results[m.id];
     if(!winner) return;
     userList.forEach(u=>{ if((u.picks||{})[m.id]===winner) scores[u.id]++; });
@@ -650,7 +707,7 @@ function renderScoreboard(){
     <tr><th class="match-col" style="color:var(--gold);">Total Score</th>${userList.map(u=>`<th class="score-total">${scores[u.id]} / ${decided}</th>`).join('')}</tr>
   </thead><tbody>`;
 
-  matches.forEach(match=>{
+  eventMatches.forEach(match=>{
     const winner=results[match.id];
     html+=`<tr>
       <td class="match-info">
@@ -679,7 +736,7 @@ function renderScoreboard(){
 // ============================================================
 function renderAdmin(){
   if(!isAdmin){ el('adminContent').innerHTML='<div class="empty-state">Not logged in.</div>'; return; }
-  const {event,matches,results,users} = appData;
+  const {events,matches,results,users} = appData;
 
   // Get all unique wrestler names for image manager
   const allWrestlers = new Set();
@@ -688,36 +745,59 @@ function renderAdmin(){
   let html=`
   <!-- EVENT SETTINGS -->
   <div class="admin-section">
-    <div class="admin-section-title">Event Settings</div>
-    <div class="form-row">
-      <div>
-        <label>Event Name</label>
-        <input type="text" id="adminEventName" value="${(event.name||'').replace(/"/g,'&quot;')}" placeholder="e.g. WrestleMania 41">
+    <div class="admin-section-title">Manage Events</div>
+    ${(events||[]).length > 0 ? `<ul style="list-style:none; padding:0; margin-bottom: 1rem;">
+    ${events.map(ev => `<li style="display:flex;justify-content:space-between;align-items:center;background:var(--bg3);padding:10px;margin-bottom:8px;border-radius:4px;border:1px solid var(--border);">
+      <div><strong>${ev.name}</strong> (${ev.date || 'No date'}) - Cutoff: ${ev.cutoff ? new Date(ev.cutoff).toLocaleString() : 'None'}</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="editEvent('${ev.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">Delete</button>
       </div>
-      <div>
-        <label>Picks Cutoff Date/Time</label>
-        <div style="display:flex;gap:8px;">
-          <input type="date" id="adminCutoffDate" style="flex:2;" value="${event.cutoff?new Date(event.cutoff).toISOString().split('T')[0]:''}">
-          <select id="adminCutoffTime" style="flex:1;">
-            ${Array.from({length:96},(_,i)=>{
-              const h=String(Math.floor(i/4)).padStart(2,'0');
-              const m=String((i%4)*15).padStart(2,'0');
-              const val=`${h}:${m}`;
-              const currentVal = event.cutoff ? new Date(event.cutoff).toISOString().slice(11,16) : '00:00';
-              return `<option value="${val}" ${val===currentVal?'selected':''}>${val}</option>`;
-            }).join('')}
-          </select>
+    </li>`).join('')}
+    </ul>` : '<div style="color:var(--text3);margin-bottom:1rem;">No events configured.</div>'}
+    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+      <div style="font-weight:600;margin-bottom:10px;">Add New Event</div>
+      <div class="form-row">
+        <div>
+          <label>Event Name</label>
+          <input type="text" id="adminEventName" placeholder="e.g. WrestleMania 41">
+        </div>
+        <div>
+          <label>Event Date</label>
+          <input type="date" id="adminEventDate">
+        </div>
+        <div>
+          <label>Picks Cutoff Date/Time</label>
+          <div style="display:flex;gap:8px;">
+            <input type="date" id="adminCutoffDate" style="flex:2;">
+            <select id="adminCutoffTime" style="flex:1;">
+              ${Array.from({length:96},(_,i)=>{
+                const h=String(Math.floor(i/4)).padStart(2,'0');
+                const m=String((i%4)*15).padStart(2,'0');
+                const val=`${h}:${m}`;
+                return `<option value="${val}">${val}</option>`;
+              }).join('')}
+            </select>
+          </div>
         </div>
       </div>
+      <button class="btn btn-primary" onclick="saveNewEvent()" id="btnSaveEvent">Add Event</button>
+      <button class="btn btn-outline" onclick="cancelEditEvent()" id="btnCancelEditEvent" style="display:none;">Cancel Edit</button>
+      <input type="hidden" id="adminEventId">
+      <div id="eventMsg"></div>
     </div>
-    <div id="eventMsg"></div>
-    <button class="btn btn-primary" onclick="saveEvent()">Save Event Settings</button>
   </div>
 
   <!-- ADD MATCH -->
   <div class="admin-section">
     <div class="admin-section-title">Add New Match</div>
     <div class="form-row">
+      <div>
+        <label>Event</label>
+        <select id="newMatchEvent">
+          ${(events||[]).map(ev => `<option value="${ev.id}">${ev.name}</option>`).join('')}
+        </select>
+      </div>
       <div>
         <label>Match Title / Championship</label>
         <input type="text" id="newMatchTitle" placeholder="e.g. WWE Championship">
@@ -755,6 +835,7 @@ function renderAdmin(){
         <span class="drag-handle" title="Drag to reorder">≡</span>
         <div style="flex:1;min-width:0;">
           <div style="font-size:.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Match ${idx+1}</div>
+          <div style="font-size:0.8rem; color:var(--gold);">${events.find(e => e.id === match.eventId)?.name || 'Unknown Event'}</div>
           <div class="match-admin-title">${match.title}</div>
           <div class="match-admin-wrestlers">${match.wrestlers.join(' · ')}</div>
         </div>
@@ -828,15 +909,68 @@ function renderAdmin(){
 // ============================================================
 // ADMIN ACTIONS
 // ============================================================
-async function saveEvent(){
-  adminViewDirty=false;
-  const name=el('adminEventName').value.trim();
-  const date=el('adminCutoffDate').value;
-  const time=el('adminCutoffTime').value;
-  const cutoff = (date && time) ? new Date(`${date}T${time}:00Z`).toISOString() : null;
-  await fetch('/api/admin/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,cutoff})});
-  showMsg('eventMsg','Event settings saved!',false);
-  await loadData(); // safe - we just saved
+async function editEvent(id){
+  const ev = appData.events.find(e => e.id === id);
+  if(!ev) return;
+  el('adminEventId').value = id;
+  el('adminEventName').value = ev.name;
+  el('adminEventDate').value = ev.date || '';
+  if(ev.cutoff){
+    const d = new Date(ev.cutoff);
+    el('adminCutoffDate').value = d.toISOString().split('T')[0];
+    el('adminCutoffTime').value = d.toISOString().slice(11,16);
+  } else {
+    el('adminCutoffDate').value = '';
+    el('adminCutoffTime').value = '00:00';
+  }
+  el('btnSaveEvent').innerText = 'Update Event';
+  el('btnCancelEditEvent').style.display = 'inline-block';
+}
+
+function cancelEditEvent(){
+  el('adminEventId').value = '';
+  el('adminEventName').value = '';
+  el('adminEventDate').value = '';
+  el('adminCutoffDate').value = '';
+  el('adminCutoffTime').value = '00:00';
+  el('btnSaveEvent').innerText = 'Add Event';
+  el('btnCancelEditEvent').style.display = 'none';
+}
+
+async function saveNewEvent(){
+  adminViewDirty = false;
+  const id = el('adminEventId').value;
+  const name = el('adminEventName').value.trim();
+  const dateStr = el('adminEventDate').value;
+  const cd = el('adminCutoffDate').value;
+  const ct = el('adminCutoffTime').value;
+  if(!name) { showMsg('eventMsg','Event name required',true); return; }
+  let cutoff = null;
+  if(cd && ct) {
+    cutoff = new Date(`${cd}T${ct}:00Z`).toISOString();
+  }
+
+  const method = id ? 'PUT' : 'POST';
+  const url = id ? `/api/admin/events/${id}` : '/api/admin/events';
+
+  const res = await fetch(url, {
+    method,
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name, date: dateStr, cutoff})
+  });
+  if(res.ok) {
+      showMsg('eventMsg', id ? 'Event updated!' : 'Event added!',false);
+      cancelEditEvent();
+      await loadData(true);
+  } else {
+      showMsg('eventMsg','Failed to save event',true);
+  }
+}
+
+async function deleteEvent(id){
+  if(!confirm('Are you sure you want to delete this event? This will also delete all associated matches.')) return;
+  const res = await fetch(`/api/admin/events/${id}`, { method:'DELETE' });
+  if(res.ok) await loadData(true);
 }
 
 function addWrestlerInput(){
@@ -856,13 +990,15 @@ function removeWrestlerInput(btn){
 
 async function addMatch(){
   adminViewDirty=false;
+  const eventId = el('newMatchEvent') ? el('newMatchEvent').value : null;
+  if(!eventId){ showMsg('addMatchMsg','Please select an event first',true); return; }
   const title=el('newMatchTitle').value.trim();
   const matchType=el('newMatchType').value.trim();
   const inputs=el('wrestlerInputs').querySelectorAll('input');
   const wrestlers=Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
   if(!title){ showMsg('addMatchMsg','Please enter a match title',true); return; }
   if(wrestlers.length<2){ showMsg('addMatchMsg','Please add at least 2 wrestlers',true); return; }
-  await fetch('/api/admin/matches',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,matchType:matchType||`${wrestlers.length}-Way`,wrestlers})});
+  await fetch('/api/admin/matches',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId, title,matchType:matchType||`${wrestlers.length}-Way`,wrestlers})});
   el('newMatchTitle').value='';
   el('newMatchType').value='';
   el('wrestlerInputs').innerHTML=`
@@ -935,7 +1071,7 @@ async function saveEditMatch(){
   const wrestlers=Array.from(inputs).map(i=>i.value.trim()).filter(Boolean);
   if(!title){ showMsg('editMatchMsg','Title required',true); return; }
   if(wrestlers.length<2){ showMsg('editMatchMsg','At least 2 wrestlers required',true); return; }
-  await fetch(`/api/admin/matches/${matchId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,matchType:matchType||`${wrestlers.length}-Way`,wrestlers})});
+  await fetch(`/api/admin/matches/${matchId}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId, title,matchType:matchType||`${wrestlers.length}-Way`,wrestlers})});
   closeModal('editMatchModal');
   await loadData(true);
 }
@@ -1036,6 +1172,46 @@ async function fetchAllImages(){
 }
 
 // ============================================================
+
+function renderEventsView() {
+  if(!appData) return;
+  const { events, matches } = appData;
+  let html = `<div class="event-hero" style="display:flex;align-items:center;margin-bottom:1.5rem"><div class="event-name">All Scheduled Events</div></div>`;
+
+  if (!events || events.length === 0) {
+    html += `<div class="empty-state">No events scheduled.</div>`;
+    el('eventsContent').innerHTML = html;
+    return;
+  }
+
+  const sortedEvents = [...events].sort((a,b) => {
+    return (a.date||'').localeCompare(b.date||'');
+  });
+
+  html += `<div class="matches-grid">`;
+
+  sortedEvents.forEach(ev => {
+    const evMatches = (matches || []).filter(m => m.eventId === ev.id).sort((a,b)=>a.order-b.order);
+    html += `<div class="match-card" style="padding: 1rem;">
+      <div style="font-family: var(--font-head); font-size: 1.5rem; font-weight: 700; color: var(--gold);">${ev.name}</div>
+      <div style="color: var(--text3); font-size: 0.9rem; margin-bottom: 1rem;">Date: ${ev.date || 'TBD'}</div>`;
+
+    if (evMatches.length === 0) {
+      html += `<div style="color: var(--text2); font-size: 0.9rem;">Matches will be posted shortly.</div>`;
+    } else {
+      html += `<ul style="list-style-type: none; padding-left: 0;">`;
+      evMatches.forEach(m => {
+        html += `<li style="margin-bottom: 0.5rem; color: var(--text); font-size: 0.95rem;">• ${m.title} ${m.matchType ? `(${m.matchType})` : ''}</li>`;
+      });
+      html += `</ul>`;
+    }
+
+    html += `</div>`;
+  });
+
+  html += `</div>`;
+  el('eventsContent').innerHTML = html;
+}
 // INIT
 // ============================================================
 loadUser();

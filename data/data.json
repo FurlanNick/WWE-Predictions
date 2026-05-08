@@ -1,1 +1,31 @@
-{"event":{"name":"","cutoff":null},"matches":[],"users":{},"results":{}}
+{
+  "events": [
+    {
+      "id": "event_1778209312175",
+      "name": "Test Event",
+      "date": "2025-05-20",
+      "cutoff": null
+    }
+  ],
+  "matches": [
+    {
+      "id": "match_1778209315413",
+      "title": "Main Event",
+      "wrestlers": [
+        "John Cena",
+        "Randy Orton"
+      ],
+      "matchType": "Singles",
+      "eventId": "event_1778209312175",
+      "order": 0
+    }
+  ],
+  "users": {
+    "jules": {
+      "id": "jules",
+      "name": "jules",
+      "picks": {}
+    }
+  },
+  "results": {}
+}
