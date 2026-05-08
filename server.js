@@ -62,23 +62,38 @@ app.get('/api/admin/status', (req, res) => {
 app.get('/api/data', (req, res) => {
   const data = loadData();
   const now = new Date();
-  const cutoffPassed = data.event.cutoff && new Date(data.event.cutoff) < now;
   const isAdmin = !!(req.session && req.session.isAdmin);
   const userId = req.session && req.session.userId;
 
   // Clone data to avoid mutating global object
   const safeData = JSON.parse(JSON.stringify(data));
 
-  // If not admin and cutoff not passed, hide other users' picks
-  if (!isAdmin && !cutoffPassed) {
+  // Determine cutoff passed for each event
+  const cutoffPassedMap = {};
+  (safeData.events || []).forEach(ev => {
+    cutoffPassedMap[ev.id] = ev.cutoff && new Date(ev.cutoff) < now;
+  });
+
+  // If not admin, hide other users' picks for events where cutoff has NOT passed
+  if (!isAdmin) {
     Object.keys(safeData.users).forEach(id => {
       if (id !== userId) {
-        safeData.users[id].picks = {};
+        const userPicks = safeData.users[id].picks || {};
+        const maskedPicks = {};
+
+        // Only keep picks for matches where the event cutoff has passed
+        Object.keys(userPicks).forEach(matchId => {
+          const match = safeData.matches.find(m => m.id === matchId);
+          if (match && match.eventId && cutoffPassedMap[match.eventId]) {
+            maskedPicks[matchId] = userPicks[matchId];
+          }
+        });
+        safeData.users[id].picks = maskedPicks;
       }
     });
   }
 
-  res.json({ ...safeData, cutoffPassed, isAdmin });
+  res.json({ ...safeData, isAdmin, currentUserId: userId });
 });
 
 app.post('/api/users/register', (req, res) => {
@@ -115,19 +130,40 @@ app.post('/api/picks', (req, res) => {
   res.json({ success: true, picks: data.users[userId].picks });
 });
 
-app.post('/api/admin/event', requireAdmin, (req, res) => {
-  const { name, cutoff } = req.body;
+app.post('/api/admin/events', requireAdmin, (req, res) => {
+  const { name, date, cutoff } = req.body;
   const data = loadData();
-  data.event = { name, cutoff };
+  const id = 'event_' + Date.now();
+  data.events.push({ id, name, date, cutoff });
+  saveData(data);
+  res.json({ success: true, event: data.events[data.events.length - 1] });
+});
+
+app.put('/api/admin/events/:id', requireAdmin, (req, res) => {
+  const { name, date, cutoff } = req.body;
+  const data = loadData();
+  const idx = data.events.findIndex(e => e.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Event not found' });
+  data.events[idx] = { ...data.events[idx], name, date, cutoff };
+  saveData(data);
+  res.json({ success: true, event: data.events[idx] });
+});
+
+app.delete('/api/admin/events/:id', requireAdmin, (req, res) => {
+  const data = loadData();
+  data.events = data.events.filter(e => e.id !== req.params.id);
+  // Also delete matches associated with this event
+  data.matches = data.matches.filter(m => m.eventId !== req.params.id);
   saveData(data);
   res.json({ success: true });
 });
 
 app.post('/api/admin/matches', requireAdmin, (req, res) => {
-  const { title, wrestlers, matchType } = req.body;
+  const { title, wrestlers, matchType, eventId } = req.body;
+  if (!eventId) return res.status(400).json({ error: 'Event ID required' });
   const data = loadData();
   const id = 'match_' + Date.now();
-  data.matches.push({ id, title, wrestlers, matchType, order: data.matches.length });
+  data.matches.push({ id, title, wrestlers, matchType, eventId, order: data.matches.length });
   saveData(data);
   res.json({ success: true, match: data.matches[data.matches.length - 1] });
 });
